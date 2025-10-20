@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cognitive Reasoning Challenge - TALG edition</title>
+  <style>
+    :root{
+      --bg1:#0f1724; --bg2:#0b1220; --card:#0f1724;
+      --accent:#10b981; --muted:#94a3b8; --glass: rgba(255,255,255,0.03);
+      --card-2:#0b1220;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#e6eef8}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .container{width:100%;max-width:980px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;color:#012;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:20px;box-shadow: 0 10px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px)}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .controls{display:flex;gap:10px;align-items:center;margin-top:12px}
+    button.btn{background:var(--accent);border:0;color:#012;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+    button.btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .timer{font-weight:700;color:var(--accent);font-size:18px}
+    .progressWrap{height:10px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden;margin-top:12px}
+    .progressBar{height:100%;background:linear-gradient(90deg,var(--accent),#06b6d4);width:0%}
+    .question{font-size:18px;margin-bottom:12px}
+    .options{display:grid;gap:8px}
+    .optionBtn{background:var(--card-2);border:1px solid rgba(255,255,255,0.03);color:#e6eef8;padding:10px;border-radius:10px;text-align:left;cursor:pointer}
+    .optionBtn:hover{border-color:rgba(16,185,129,0.18);transform:translateY(-2px)}
+    .small{font-size:13px;color:var(--muted)}
+    .center{display:flex;justify-content:center;align-items:center}
+    .leader{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px}
+    .leader h3{margin:0 0 8px 0;color:var(--accent)}
+    .leader ul{margin:0;padding:0;list-style:none}
+    .leader li{padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02);font-size:14px;color:var(--muted)}
+    footer{margin-top:16px;font-size:13px;color:var(--muted);text-align:center}
+    .resultBig{font-size:36px;font-weight:800;color:var(--accent);margin:6px 0}
+    .muted-block{color:var(--muted)}
+    .sound-toggle{display:flex;gap:6px;align-items:center}
+    .finishBtn{background:#06b6d4;color:#012}
+    @media (max-width:920px){
+      .grid{grid-template-columns:1fr;min-height:0}
+      .container{padding:0 8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="container">
+      <header>
+        <div class="logo">CR</div>
+        <div>
+          <h1>Cognitive Reasoning Challenge - TALG edition</h1>
+          <p class="lead">Test your logic, numbers, and pattern recognition in 6 minutes!</p>
+        </div>
+      </header>
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <!-- Main test area -->
+            <div id="startScreen">
+              <h2 style="margin-top:0">Ready?</h2>
+              <p class="small">This test has 12 questions, 6 minutes total. Click <strong>Start Test</strong> when you're ready. Sounds and leaderboard are included.</p>
+              <div style="margin-top:14px" class="controls">
+                <button class="btn" id="startBtn">Start Test</button>
+                <button class="btn secondary" id="practiceBtn">Practice (no timer)</button>
+                <div style="margin-left:auto" class="sound-toggle">
+                  <label class="small" for="soundOn">Sound</label>
+                  <input id="soundOn" type="checkbox" checked />
+                </div>
+              </div>
+              <div style="margin-top:14px" class="small">Tip: move quickly through easy ones first and return to harder in remaining time.</div>
+            </div>
+
+            <div id="testArea" style="display:none">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div class="small">Question <span id="qIndex">1</span> / <span id="qTotal">12</span></div>
+                  <div class="question" id="questionText">Question text goes here</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="timer" id="timeDisplay">6:00</div>
+                  <div class="small muted-block" id="progressText">0%</div>
+                </div>
+              </div>
+
+              <div class="progressWrap" aria-hidden="true" style="margin-top:12px">
+                <div class="progressBar" id="progressBar"></div>
+              </div>
+
+              <div style="margin-top:18px">
+                <div class="options" id="optionsWrap"></div>
+
+                <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+                  <button class="btn finishBtn" id="finishBtn">Finish Test</button>
+                  <button class="btn secondary" id="prevBtn">Previous</button>
+                  <button class="btn secondary" id="nextBtn">Next</button>
+                  <div style="margin-left:auto" class="small muted-block">Answered: <span id="answeredCount">0</span> / 12</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="resultArea" style="display:none">
+              <h2 style="margin-top:0">Results</h2>
+              <div class="center" style="gap:18px;flex-wrap:wrap">
+                <div style="min-width:160px" class="center">
+                  <div>
+                    <div class="small muted-block">Score</div>
+                    <div class="resultBig" id="scoreDisplay">0 / 12</div>
+                    <div id="feedbackText" class="small muted-block">Feedback here</div>
+                  </div>
+                </div>
+                <div style="min-width:160px" class="center">
+                  <div>
+                    <div class="small muted-block">Accuracy</div>
+                    <div class="resultBig" id="percentDisplay">0%</div>
+                    <div style="margin-top:6px">
+                      <button class="btn" id="retryBtn">Retry</button>
+                      <button class="btn secondary" id="downloadBtn">Export Scores</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:18px" class="small muted-block">
+                <strong>Answers & explanations (quick):</strong>
+                <ul id="explainList"></ul>
+              </div>
+            </div>
+
+          </div>
+
+          <aside>
+            <div class="leader card" style="padding:12px">
+              <h3>🏆 Leaderboard (local)</h3>
+              <ul id="leaderboardList">
+                <li class="small muted-block">No runs yet — play to create a record.</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:12px" class="card" id="controlsRight">
+              <div class="small muted-block">Settings</div>
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                <label class="small">Mode:</label>
+                <select id="modeSelect" style="padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)">
+                  <option value="timed">Timed (6:00)</option>
+                  <option value="practice">Practice (no timer)</option>
+                </select>
+              </div>
+
+              <div style="margin-top:10px">
+                <label class="small">Sound</label>
+                <div style="display:flex;gap:8px;margin-top:6px">
+                  <button class="btn secondary" id="toggleTick">Toggle Tick</button>
+                  <button class="btn secondary" id="toggleChime">Toggle Chime</button>
+                </div>
+              </div>
+
+              <div style="margin-top:12px" class="small muted-block">
+                <strong>Quick stats</strong>
+                <div style="margin-top:6px">Total runs: <span id="totalRuns">0</span></div>
+                <div style="margin-top:6px">Best score: <span id="bestScore">—</span></div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="card small muted-block">
+              <strong>How to use</strong>
+              <ol style="padding-left:16px;margin:8px 0 0 0">
+                <li>Click <em>Start Test</em> — timer begins.</li>
+                <li>Click answers; navigate with Next/Prev.</li>
+                <li>Click <em>Finish Test</em> or wait for timer to end.</li>
+                <li>Results are saved locally in your browser under the leaderboard.</li>
+              </ol>
+            </div>
+          </aside>
+        </div>
+
+        <footer>
+          <div class="small muted-block">Built for practice — leaderboard stored only in your browser. Good luck!</div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Questions (12) — from the mixed simulation (Round C)
+    const QUESTIONS = [
+      { q: 'If P→Q and Q→R, then:', options: ['P→R','R→P','P↔R','None'], correct: 0, explain:'Transitivity: P→R.'},
+      { q: '45% of 200 = ?', options: ['80','85','90','95'], correct: 2, explain:'0.45*200 = 90.'},
+      { q: '2, 4, 8, 16, ___', options: ['24','30','32','34'], correct: 2, explain:'Powers of two: next is 32.'},
+      { q: 'Synonym of \"ephemeral\":', options: ['Permanent','Short-lived','Predictable','Enormous'], correct: 1, explain:'Ephemeral = short-lived.'},
+      { q: 'Which shape does NOT belong if rule is \"has an odd number of sides\"?', options:['Triangle','Square','Pentagon','Heptagon'], correct:1, explain:'Square has 4 sides (even).'},
+      { q: '(3 + 2) × (6 − 4) = ?', options:['10','15','12','8'], correct:0, explain:'(5)*(2)=10.'},
+      { q: '“If not A then not B” ≡ ?', options:['If B then A','If A then B','If B then not A','If A then not B'], correct:0, explain:'Contrapositive equivalence.'},
+      { q: 'If 3 workers take 8 hours, how many worker-hours is the job?', options:['11','24','16','8'], correct:1, explain:'3 * 8 = 24 worker-hours.'},
+      { q: 'Pilot : plane :: Captain :', options:['Ship','Crew','Flight','Harbor'], correct:0, explain:'Captain operates a ship.'},
+      { q: 'What is 15 × 12?', options:['170','180','160','190'], correct:1, explain:'15*12 = 180.'},
+      { q: '10, 7, 11, 8, 12, 9, ?', options:['13','10','14','11'], correct:1, explain:'Two interleaved sequences -> next is 10.'},
+      { q: 'If X→Y; if not X→Z. We observe Z. Then:', options:['X true','X false','Y true','Nothing'], correct:1, explain:'If not X→Z and Z is true, not X is true therefore X false.'}
+    ];
+
+    // UI elements
+    const startBtn = document.getElementById('startBtn');
+    const practiceBtn = document.getElementById('practiceBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const testArea = document.getElementById('testArea');
+    const startScreen = document.getElementById('startScreen');
+    const resultArea = document.getElementById('resultArea');
+    const qIndex = document.getElementById('qIndex');
+    const qTotal = document.getElementById('qTotal');
+    const questionText = document.getElementById('questionText');
+    const optionsWrap = document.getElementById('optionsWrap');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const answeredCount = document.getElementById('answeredCount');
+    const finishBtn = document.getElementById('finishBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const percentDisplay = document.getElementById('percentDisplay');
+    const feedbackText = document.getElementById('feedbackText');
+    const explainList = document.getElementById('explainList');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const totalRuns = document.getElementById('totalRuns');
+    const bestScore = document.getElementById('bestScore');
+    const soundOn = document.getElementById('soundOn');
+    const retryBtn = document.getElementById('retryBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const toggleTick = document.getElementById('toggleTick');
+    const toggleChime = document.getElementById('toggleChime');
+
+    // state
+    let mode = 'timed'; // or 'practice'
+    let timeLeft = 360; // seconds
+    let timer = null;
+    let currentIndex = 0;
+    let answers = new Array(QUESTIONS.length).fill(null);
+    let tickEnabled = true;
+    let chimeEnabled = true;
+
+    qTotal.innerText = QUESTIONS.length;
+
+    // Sound synthesis (no external files)
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function ensureAudioCtx(){
+      if(!audioCtx) audioCtx = new AudioCtx();
+      return audioCtx;
+    }
+
+    function playTick(){
+      if(!tickEnabled || !soundOn.checked) return;
+      const ctx = ensureAudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 880;
+      g.gain.value = 0.02;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(()=>{o.stop()}, 60);
+    }
+    function playChime(type='end'){
+      if(!chimeEnabled || !soundOn.checked) return;
+      const ctx = ensureAudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      g.gain.value = 0.0018;
+      o.connect(g); g.connect(ctx.destination);
+      if(type==='success'){
+        o.frequency.value = 660;
+        o.start();
+        setTimeout(()=>{o.frequency.value = 880}, 120);
+        setTimeout(()=>{o.stop();}, 300);
+      } else {
+        o.frequency.value = 440;
+        o.start();
+        setTimeout(()=>{o.stop()}, 500);
+      }
+    }
+
+    function formatTime(s){
+      const m = Math.floor(s/60);
+      const sec = s%60;
+      return `${m}:${sec.toString().padStart(2,'0')}`;
+    }
+
+    function renderQuestion(){
+      const Q = QUESTIONS[currentIndex];
+      qIndex.innerText = currentIndex + 1;
+      questionText.innerText = Q.q;
+      optionsWrap.innerHTML = '';
+      Q.options.forEach((opt, idx) => {
+        const b = document.createElement('button');
+        b.className = 'optionBtn';
+        b.innerText = opt;
+        b.onclick = () => {
+          answers[currentIndex] = idx;
+          updateAnsweredCount();
+          renderQuestion(); // re-render to show selection
+          if(mode === 'timed') playTick();
+        };
+        optionsWrap.appendChild(b);
+      });
+      // color selected
+      setTimeout(()=> {
+        const children = optionsWrap.children;
+        for(let i=0;i<children.length;i++){
+          if(answers[currentIndex] === i){
+            children[i].style.border = '1px solid rgba(16,185,129,0.28)';
+          } else {
+            children[i].style.border = '1px solid rgba(255,255,255,0.03)';
+          }
+        }
+      }, 20);
+      updateProgress();
+    }
+
+    function updateProgress(){
+      const p = Math.round((currentIndex / QUESTIONS.length) * 100);
+      progressBar.style.width = p + '%';
+      progressText.innerText = p + '%';
+    }
+
+    function updateAnsweredCount(){
+      const cnt = answers.filter(a => a !== null).length;
+      answeredCount.innerText = cnt;
+    }
+
+    function startTimer(){
+      if(mode === 'practice') {
+        timeLeft = 0;
+        timeDisplay.innerText = '--:--';
+        return;
+      }
+      if(timer) clearInterval(timer);
+      timeLeft = 360;
+      timeDisplay.innerText = formatTime(timeLeft);
+      timer = setInterval(()=> {
+        timeLeft--;
+        timeDisplay.innerText = formatTime(timeLeft);
+        // tick on every 10 seconds for subtle feedback
+        if(timeLeft>0 && timeLeft % 10 === 0) playTick();
+        if(timeLeft <= 0){
+          clearInterval(timer);
+          finishTest();
+        }
+      }, 1000);
+    }
+
+    function openTest(selectedMode){
+      mode = selectedMode || document.getElementById('modeSelect').value;
+      startScreen.style.display = 'none';
+      resultArea.style.display = 'none';
+      testArea.style.display = 'block';
+      currentIndex = 0;
+      answers = new Array(QUESTIONS.length).fill(null);
+      renderQuestion();
+      updateAnsweredCount();
+      if(mode === 'timed'){
+        startTimer();
+      } else {
+        // practice mode (no timer)
+        timeDisplay.innerText = '--:--';
+      }
+    }
+
+    function gotoIndex(i){
+      if(i < 0) i = 0;
+      if(i >= QUESTIONS.length) i = QUESTIONS.length - 1;
+      currentIndex = i;
+      renderQuestion();
+    }
+
+    function finishTest(){
+      // stop timer
+      if(timer) clearInterval(timer);
+      // compute score
+      let sc = 0;
+      for(let i=0;i<QUESTIONS.length;i++){
+        if(answers[i] === QUESTIONS[i].correct) sc++;
+      }
+      // save to local leaderboard
+      const rec = { date: new Date().toLocaleString(), score: sc };
+      let board = JSON.parse(localStorage.getItem('cr_leaderboard') || '[]');
+      board.unshift(rec);
+      board = board.slice(0,10);
+      localStorage.setItem('cr_leaderboard', JSON.stringify(board));
+      // show result
+      showResult(sc, board);
+      if(chimeEnabled) playChime('end');
+    }
+
+    function showResult(score, board){
+      testArea.style.display = 'none';
+      resultArea.style.display = 'block';
+      scoreDisplay.innerText = `${score} / ${QUESTIONS.length}`;
+      const percent = Math.round((score / QUESTIONS.length) * 100);
+      percentDisplay.innerText = percent + '%';
+      feedbackText.innerText = percent >= 80 ? 'Excellent cognitive agility!' : percent >= 60 ? 'Good performance, keep sharpening!' : 'Keep practicing to boost your reasoning speed.';
+      // explanations
+      explainList.innerHTML = '';
+      for(let i=0;i<QUESTIONS.length;i++){
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        const user = answers[i] === null ? 'No answer' : QUESTIONS[i].options[answers[i]];
+        const corr = QUESTIONS[i].options[QUESTIONS[i].correct];
+        li.innerHTML = `<strong>Q${i+1}.</strong> ${QUESTIONS[i].q} <div class="small">Your: <em>${user}</em> • Correct: <em>${corr}</em> • ${QUESTIONS[i].explain}</div>`;
+        explainList.appendChild(li);
+      }
+      // leaderboard
+      renderLeaderboard(board);
+    }
+
+    function renderLeaderboard(board){
+      leaderboardList.innerHTML = '';
+      if(!board || board.length === 0){
+        leaderboardList.innerHTML = '<li class="small muted-block">No runs yet — play to create a record.</li>';
+      } else {
+        board.forEach((r,i) => {
+          const li = document.createElement('li');
+          li.innerHTML = `${i+1}. <strong>${r.score}/${QUESTIONS.length}</strong> — <span class="small muted-block">${r.date}</span>`;
+          leaderboardList.appendChild(li);
+        });
+      }
+      totalRuns.innerText = board.length;
+      bestScore.innerText = board.length ? (Math.max(...board.map(x=>x.score)) + '/' + QUESTIONS.length) : '—';
+    }
+
+    // init saved leaderboard on load
+    (function init(){
+      const saved = JSON.parse(localStorage.getItem('cr_leaderboard') || '[]');
+      renderLeaderboard(saved);
+      // attach
+      startBtn.onclick = ()=> openTest('timed');
+      practiceBtn.onclick = ()=> openTest('practice');
+      modeSelect.onchange = (e)=> mode = e.target.value;
+      prevBtn.onclick = ()=> { gotoIndex(currentIndex - 1); };
+      nextBtn.onclick = ()=> { gotoIndex(currentIndex + 1); };
+      finishBtn.onclick = ()=> {
+        if(confirm('Finish test now and submit answers?')) finishTest();
+      };
+      retryBtn.onclick = ()=> { location.reload(); };
+      downloadBtn.onclick = ()=> {
+        const board = JSON.parse(localStorage.getItem('cr_leaderboard') || '[]');
+        const blob = new Blob([JSON.stringify(board, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'cognitive_leaderboard.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+      document.getElementById('soundOn').onchange = (e)=> { if(!e.target.checked && audioCtx){ try { audioCtx.close(); audioCtx=null;}catch{} } };
+      toggleTick.onclick = ()=> { tickEnabled = !tickEnabled; toggleTick.innerText = tickEnabled ? 'Toggle Tick' : 'Tick Off'; };
+      toggleChime.onclick = ()=> { chimeEnabled = !chimeEnabled; toggleChime.innerText = chimeEnabled ? 'Toggle Chime' : 'Chime Off'; };
+      // keyboard navigation
+      document.addEventListener('keydown', (ev)=> {
+        if(testArea.style.display !== 'block') return;
+        if(ev.key === 'ArrowLeft') prevBtn.click();
+        if(ev.key === 'ArrowRight') nextBtn.click();
+        if(ev.key >= '1' && ev.key <= '4'){
+          const idx = parseInt(ev.key) - 1;
+          answers[currentIndex] = idx;
+          updateAnsweredCount();
+          renderQuestion();
+        }
+      });
+    })();
+
+  </script>
+</body>
+</html>
